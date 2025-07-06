@@ -2,12 +2,16 @@ package com.buguapp.callermanager
 
 
 import android.Manifest
+import android.app.Activity
+import android.app.role.RoleManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -20,6 +24,9 @@ import com.buguapp.callermanager.ui.theme.CallerManagerTheme
 import com.buguapp.callermanager.view.PhoneSelectorUI
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var dialerRoleLauncher: ActivityResultLauncher<Intent>
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +62,19 @@ class MainActivity : ComponentActivity() {
             startCallListenerService()
         }
 
+        dialerRoleLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                // Kullanıcı uygulamayı dialer olarak atadı ✅
+            } else {
+                // Reddetti veya iptal etti ❌
+            }
+        }
+
+
+        requestDialerRoleIfNeeded()
+
         setContent {
             CallerManagerTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -63,6 +83,19 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun requestDialerRoleIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(Context.ROLE_SERVICE) as RoleManager
+            if (roleManager.isRoleAvailable(RoleManager.ROLE_DIALER) &&
+                !roleManager.isRoleHeld(RoleManager.ROLE_DIALER)
+            ) {
+                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER)
+                dialerRoleLauncher.launch(intent)
+            }
+        }
+    }
+
 
     private fun startCallListenerService() {
         val serviceIntent = Intent(this, CallListenerService::class.java)

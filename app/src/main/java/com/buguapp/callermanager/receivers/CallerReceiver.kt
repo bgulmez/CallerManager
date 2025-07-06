@@ -3,9 +3,8 @@ package com.buguapp.callermanager.receivers
 import android.content.Context
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
-import com.buguapp.callermanager.helper.SoundHelper
-import com.buguapp.callermanager.helper.SoundPlayer
 import com.buguapp.callermanager.helper.CallHelper
+import com.buguapp.callermanager.helper.SoundHelper
 
 class CallReceiver(private val context: Context) : PhoneStateListener() {
 
@@ -13,7 +12,7 @@ class CallReceiver(private val context: Context) : PhoneStateListener() {
         when (state) {
             TelephonyManager.CALL_STATE_RINGING -> {
                 val watchedNumbers = CallHelper.getSavedNumbers(context)
-                var incomingNumberValue : String = incomingNumber ?: " "
+                var incomingNumberValue : String = incomingNumber ?: ""
                 if((incomingNumber?.length ?: 0)>10) {
                     incomingNumberValue = incomingNumber?.takeLast(10) ?: ""
                 }
@@ -22,7 +21,8 @@ class CallReceiver(private val context: Context) : PhoneStateListener() {
                         watchedNumber.let { it.contains(incomingNumberValue) }
                     }) {
                     SoundHelper.setLoudRinger(context)
-                    SoundPlayer.playSound(context)
+                    /** if you want to play custom sound, uncomment the following line and updated to your sound file */
+//                    SoundPlayer.playSound(context)
                 }
 
             }
@@ -30,7 +30,8 @@ class CallReceiver(private val context: Context) : PhoneStateListener() {
             TelephonyManager.CALL_STATE_OFFHOOK,
             TelephonyManager.CALL_STATE_IDLE -> {
                 SoundHelper.restoreRingerMode(context)
-                SoundPlayer.stopSound()
+                /** if you want to play custom sound, uncomment the following line and updated to your sound file */
+//                SoundPlayer.stopSound()
             }
         }
     }
