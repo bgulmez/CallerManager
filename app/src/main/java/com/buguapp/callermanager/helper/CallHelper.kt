@@ -40,12 +40,17 @@ object CallHelper {
             .getString("watched_number", null)
     }
 
-    fun removeContact(context: Context) {
-        context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-            .edit()
-            .remove("watched_contact")
-            .remove("watched_number")
-            .apply()
+
+    fun getSavedNumbers(context: Context): List<String> {
+        val prefs = context.getSharedPreferences("caller_prefs", Context.MODE_PRIVATE)
+        val saved = prefs.getStringSet("saved_numbers", emptySet()) ?: emptySet()
+        return saved.toList()
     }
+
+    fun saveNumbers(context: Context, numbers: List<String>) {
+        val prefs = context.getSharedPreferences("caller_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putStringSet("saved_numbers", numbers.toSet()).apply()
+    }
+
 
 }

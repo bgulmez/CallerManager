@@ -12,8 +12,11 @@ class CallReceiver(private val context: Context) : PhoneStateListener() {
     override fun onCallStateChanged(state: Int, incomingNumber: String?) {
         when (state) {
             TelephonyManager.CALL_STATE_RINGING -> {
-                val watchedNumber = CallHelper.getSavedNumber(context)
-                if (incomingNumber?.contains(watchedNumber ?: "") == true) {
+                val watchedNumbers = CallHelper.getSavedNumbers(context)
+                // Check if the incoming number is not null and is contained in any of the watched numbers
+                if (incomingNumber != null && watchedNumbers.any { watchedNumber ->
+                        watchedNumber.let { it.contains(incomingNumber) }
+                    }) {
                     SoundHelper.setLoudRinger(context)
                     SoundPlayer.playSound(context)
                 }

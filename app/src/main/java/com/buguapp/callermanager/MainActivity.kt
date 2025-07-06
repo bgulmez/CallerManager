@@ -17,7 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import com.buguapp.callermanager.receivers.CallListenerService
 import com.buguapp.callermanager.ui.theme.CallerManagerTheme
-import com.buguapp.callermanager.view.SingleContactPickerUI
+import com.buguapp.callermanager.view.PhoneSelectorUI
 
 class MainActivity : ComponentActivity() {
 
@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CallerManagerTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SingleContactPickerUI()
+                    PhoneSelectorUI()
                 }
             }
         }
@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
 fun GreetingPreview() {
     CallerManagerTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            SingleContactPickerUI()
+            PhoneSelectorUI()
         }
     }
 }

@@ -4,7 +4,8 @@ import android.net.Uri
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -27,15 +29,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.buguapp.callermanager.helper.CallHelper.getSavedNumber
-import com.buguapp.callermanager.helper.CallHelper.saveNumber
+import com.buguapp.callermanager.helper.CallHelper.getSavedNumbers
+import com.buguapp.callermanager.helper.CallHelper.saveNumbers
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun SingleContactPickerUI() {
+fun PhoneSelectorUI() {
     val context = LocalContext.current
-    var selectedContact by remember { mutableStateOf(getSavedNumber(context)) }
+
+    // Kaydedilen numaraları liste olarak al, yoksa boş liste
+    var selectedContacts by remember { mutableStateOf(getSavedNumbers(context).toMutableList()) }
+    var contactToDelete by remember { mutableStateOf<String?>(null) }
 
     val pickContactLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickContact()
@@ -43,7 +48,6 @@ fun SingleContactPickerUI() {
         uri?.let {
             val contentResolver = context.contentResolver
 
-            // İlk olarak contact ID'yi al
             val contactCursor = contentResolver.query(
                 it,
                 arrayOf(ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME),
@@ -60,7 +64,6 @@ fun SingleContactPickerUI() {
                 val name = contactCursor.getString(nameIndex)
                 contactCursor.close()
 
-                // ID üzerinden telefon numarasını sorgula
                 val phoneCursor = contentResolver.query(
                     ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                     arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
@@ -75,14 +78,17 @@ fun SingleContactPickerUI() {
                     val number = phoneCursor.getString(numberIndex)
                         .replace(" ", "")
                         .replace("-", "")
-
-                    saveNumber(context, number)
-                    selectedContact = "$name\n$number"
                     phoneCursor.close()
-                } else {
-                    selectedContact = "Telefon numarası bulunamadı"
-                }
 
+                    val contactString = "$name\n$number"
+
+                    // Eğer listede yoksa ekle
+                    if (!selectedContacts.contains(contactString)) {
+                        selectedContacts =
+                            (selectedContacts + contactString).toMutableList()  // Listeyi yenile
+                        saveNumbers(context, selectedContacts) // Listeyi kaydet
+                    }
+                }
             }
         }
     }
@@ -105,14 +111,58 @@ fun SingleContactPickerUI() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Top
+                .padding(16.dp)
         ) {
-            Text("Seçilen kişi:", style = MaterialTheme.typography.titleMedium)
+            Text("Seçilen kişiler:", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(selectedContact ?: "Henüz kişi seçilmedi")
+
+            if (selectedContacts.isEmpty()) {
+                Text("Henüz kişi seçilmedi")
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn {
+                    items(selectedContacts.size) { index ->
+                        val contact = selectedContacts[index]
+                        Text(
+                            text = contact,
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .fillMaxSize()
+                                .combinedClickable(
+                                    onClick = { /* İstersen buraya tıklama işlevi */ },
+                                    onLongClick = {
+                                        contactToDelete = contact
+                                    }
+                                ),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
         }
     }
-}
 
+    // Silme onayı dialogu
+    if (contactToDelete != null) {
+        androidx.compose.material3.AlertDialog(
+            modifier = Modifier.padding(horizontal = 16.dp), // Adds 16dp padding on the left and right
+            onDismissRequest = { contactToDelete = null },
+            title = { Text("Kişiyi Sil",) },
+            text = { Text("Bu kişiyi silmek istediğinize emin misiniz?") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    selectedContacts = selectedContacts.filter { it != contactToDelete }.toMutableList()
+                    saveNumbers(context, selectedContacts)
+                    contactToDelete = null
+                }) {
+                    Text("Evet")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { contactToDelete = null }) {
+                    Text("Hayır")
+                }
+            }
+        )
+    }
+}
 
